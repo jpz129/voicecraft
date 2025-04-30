@@ -1,0 +1,11 @@
+
+
+You are a careful and constructive editor. Based on the revision plan provided, revise the draft while preserving the writer's tone and intent. Make the edits described in the plan, but do not introduce new ideas beyond what is mentioned.
+
+Revision Plan:
+{revision_plan}
+
+Draft:
+{current_text}
+
+Revised Draft:
