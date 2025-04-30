@@ -1,28 +1,34 @@
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableLambda
-from langchain_huggingface import HuggingFaceEndpoint
+from langchain_core.output_parsers import PydanticOutputParser
+from huggingface_hub import InferenceClient
 from pathlib import Path
 import os
+import json
 
-# Load the prompt template
+from app.models.schemas import RevisionPlan
+
+# Load and prepare prompt
 plan_template = Path(__file__).parent.parent / "prompts" / "plan.txt"
 prompt_text = plan_template.read_text()
-
-prompt = PromptTemplate.from_template(prompt_text)
+parser = PydanticOutputParser(pydantic_object=RevisionPlan)
+escaped_format_instructions = parser.get_format_instructions().replace("{", "{{").replace("}", "}}")
+full_prompt = prompt_text + "\n\n" + escaped_format_instructions
+prompt = PromptTemplate(template=full_prompt, input_variables=["input"])
 
 # Define the planning node
 def plan_node():
     endpoint_url = os.getenv("HF_ENDPOINT_URL")
     api_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+    client = InferenceClient(model=endpoint_url, token=api_token)
 
-    llm = HuggingFaceEndpoint(
-        endpoint_url=endpoint_url,
-        huggingfacehub_api_token=api_token,
-        temperature=0.3,
-        max_new_tokens=300
-    )
+    def generate(state):
+        formatted_prompt = prompt.format(input=state["current_text"])
+        response = client.text_generation(
+            prompt=formatted_prompt,
+            max_new_tokens=500,
+            temperature=0.3,
+        )
+        return {"revision_plan": parser.invoke(response).revision_plan}
 
-    chain = prompt | llm
-    return RunnableLambda(lambda state: {
-        "revision_plan": chain.invoke({"input": state["current_text"]})
-    })
+    return RunnableLambda(generate)
