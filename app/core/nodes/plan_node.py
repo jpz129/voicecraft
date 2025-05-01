@@ -6,7 +6,7 @@ from pathlib import Path
 import os
 import json
 
-from app.models.schemas import RevisionPlan
+from app.models.schemas import RevisionPlan, WorkflowState
 
 # Load and prepare prompt
 plan_template = Path(__file__).parent.parent / "prompts" / "plan.txt"
@@ -22,8 +22,8 @@ def plan_node():
     api_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
     client = InferenceClient(model=endpoint_url, token=api_token)
 
-    def generate(state):
-        formatted_prompt = prompt.format(input=state["current_text"])
+    def generate(state: WorkflowState):
+        formatted_prompt = prompt.format(input=state.current_text)
         response = client.text_generation(
             prompt=formatted_prompt,
             max_new_tokens=500,

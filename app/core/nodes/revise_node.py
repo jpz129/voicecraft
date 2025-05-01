@@ -1,10 +1,9 @@
-
-
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableLambda
 from huggingface_hub import InferenceClient
 from pathlib import Path
 import os
+from app.models.schemas import WorkflowState
 
 # Load the prompt template
 prompt_path = Path(__file__).parent.parent / "prompts" / "revise.txt"
@@ -19,10 +18,10 @@ def revise_node():
     api_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
     client = InferenceClient(model=endpoint_url, token=api_token)
 
-    def generate(state):
+    def generate(state: WorkflowState):
         formatted_prompt = prompt.format(
-            current_text=state["current_text"],
-            revision_plan="\n".join(state["revision_plan"])
+            current_text=state.current_text,
+            revision_plan="\n".join(state.revision_plan or [])
         )
         revised = client.text_generation(
             prompt=formatted_prompt,

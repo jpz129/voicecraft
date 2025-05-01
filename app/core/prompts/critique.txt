@@ -1,0 +1,9 @@
+You are an expert writing assistant. Given the following revised text and the revision plan that guided it, provide a list of constructive, actionable critiques or suggestions for further improvement. Focus on clarity, tone, persuasiveness, and any issues with logic or structure. Be specific and concise.
+
+Revised Text:
+{revised_text}
+
+Revision Plan:
+{revision_plan}
+
+Your response should be a list of critique points, each as a short sentence.
