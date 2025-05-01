@@ -23,6 +23,7 @@ class WorkflowState(BaseModel):
     critique_feedback: Optional[List[str]] = None
     revise_again: Optional[bool] = None
     iteration: int = 0  # Add iteration counter
+    user_feedback: Optional[str] = None  # New: user can provide feedback for further changes
 
 class ReviseRequest(BaseModel):
     draft: str

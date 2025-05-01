@@ -135,11 +135,24 @@ You'll see:
 - **Add Nodes**: Extend with new nodes (e.g., retrieval, ab testing)
 - **Frontend**: Use the Streamlit app for interactive revision (see `frontend/`)
 
-## 📚 For Developers
-- All state and node outputs are defined in `app/models/schemas.py`
-- Each node is in `app/core/nodes/`
-- Experiment scripts are in `experiments/`
-- Tests are in `tests/`
+## 🧭 Next Steps & Roadmap
+
+- **Enhance User Feedback Influence:**
+  - Currently, user feedback is appended to the planning prompt and influences the revision plan. Next, we want to make user feedback more deeply integrated and influential throughout the workflow, possibly by:
+    - Passing user feedback to the revise and critique nodes/prompts as well.
+    - Adjusting prompt engineering so feedback is more directly reflected in each step.
+    - Experimenting with weighting or prioritizing user feedback in the revision logic.
+- **Advanced Feedback Loops:**
+  - Allow multi-turn, conversational feedback and revision cycles.
+  - Track and display feedback history and its effect on each revision.
+- **Better State Visualization:**
+  - Continue improving frontend and backend state logging and visualization.
+- **Retrieval & AB Testing:**
+  - Integrate retrieval-augmented generation and AB testing modules for more robust writing support.
+- **Productionization:**
+  - Add authentication, rate limiting, and deployment scripts for public or team use.
+- **Community & Extensibility:**
+  - Make it easy for others to add new nodes, prompts, or workflows.
 
 ---
 

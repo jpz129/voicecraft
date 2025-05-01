@@ -33,7 +33,12 @@ def critique_node():
             max_new_tokens=500,
             temperature=0.3,
         )
-        # Parse and return structured critique feedback
-        return {"critique_feedback": parser.invoke(response).feedback}
+        # Defensive: handle empty/null/None response
+        if not response or response.strip().lower() in ("null", "none"):
+            return {"critique_feedback": ["No critique feedback was generated."]}
+        try:
+            return {"critique_feedback": parser.invoke(response).feedback}
+        except Exception:
+            return {"critique_feedback": ["Failed to parse critique feedback."]}
 
     return RunnableLambda(generate)

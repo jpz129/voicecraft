@@ -14,7 +14,7 @@ prompt_text = plan_template.read_text()
 parser = PydanticOutputParser(pydantic_object=RevisionPlan)
 escaped_format_instructions = parser.get_format_instructions().replace("{", "{{").replace("}", "}}")
 full_prompt = prompt_text + "\n\n" + escaped_format_instructions
-prompt = PromptTemplate(template=full_prompt, input_variables=["input"])
+prompt = PromptTemplate(template=full_prompt, input_variables=["input", "user_feedback"])
 
 # Define the planning node
 def plan_node():
@@ -23,7 +23,10 @@ def plan_node():
     client = InferenceClient(model=endpoint_url, token=api_token)
 
     def generate(state: WorkflowState):
-        formatted_prompt = prompt.format(input=state.current_text)
+        formatted_prompt = prompt.format(
+            input=state.current_text,
+            user_feedback=state.user_feedback or ""
+        )
         response = client.text_generation(
             prompt=formatted_prompt,
             max_new_tokens=500,
