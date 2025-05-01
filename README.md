@@ -68,6 +68,45 @@ Voicecraft is a framework for:
 6. **Loop**: If needed, the workflow loops back to planning (up to a max of 3 iterations)
 7. **Streaming**: Each step is streamed and printed in real time for transparency
 
+## 🚀 FastAPI Integration
+
+Voicecraft now includes a modular FastAPI backend for scalable, production-ready API access to the revision workflow.
+
+### How to Run the FastAPI App
+
+1. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. **Start the FastAPI server:**
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+   The API will be available at [http://127.0.0.1:8000](http://127.0.0.1:8000)
+
+### API Endpoints
+- `POST /revise` — Run the full revision workflow and get the result as JSON.
+- `POST /revise/stream` — Stream step-by-step workflow updates as JSON lines (for real-time feedback in clients).
+
+### Example Request (Python)
+```python
+import requests
+resp = requests.post("http://127.0.0.1:8000/revise", json={"draft": "Your text here", "iteration_cap": 3})
+print(resp.json())
+```
+
+### Example Streaming Request
+```python
+import requests
+with requests.post("http://127.0.0.1:8000/revise/stream", json={"draft": "Your text here"}, stream=True) as resp:
+    for line in resp.iter_lines():
+        print(line.decode())
+```
+
+### Frontend Integration
+- The Streamlit app in `frontend/streamlit_app.py` is now configured to use the FastAPI backend for all workflow execution and streaming.
+- You can also build your own frontend or integrate with other services using the API.
+
 ## 🧩 Key Features
 - **Modular Nodes**: Each step is a reusable, testable component
 - **Pydantic State**: All workflow state is validated and structured
