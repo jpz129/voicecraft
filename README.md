@@ -68,6 +68,14 @@ Voicecraft is a framework for:
 6. **Loop**: If needed, the workflow loops back to planning (up to a max of 3 iterations)
 7. **Streaming**: Each step is streamed and printed in real time for transparency
 
+## ✨ User Feedback Enhancement
+
+- **User feedback is now a first-class citizen in the workflow!**
+- After each revision cycle, users can provide additional feedback (e.g., "Make it more formal" or "Add a call to action").
+- This feedback is incorporated into the next planning step and influences the revision plan, so the workflow adapts to user needs in real time.
+- The Streamlit frontend and API both support iterative feedback, allowing users to guide the revision process as many times as they want, with each round building on the latest revision.
+- **Next steps:** We plan to make user feedback even more influential by integrating it into the revise and critique steps, and by experimenting with prompt engineering and feedback weighting.
+
 ## 🚀 FastAPI Integration
 
 Voicecraft now includes a modular FastAPI backend for scalable, production-ready API access to the revision workflow.
