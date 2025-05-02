@@ -15,7 +15,7 @@ prompt_text = critique_template.read_text() if critique_template.exists() else (
 parser = PydanticOutputParser(pydantic_object=CritiqueFeedback)
 escaped_format_instructions = parser.get_format_instructions().replace("{", "{{").replace("}", "}}")
 full_prompt = prompt_text + "\n\n" + escaped_format_instructions
-prompt = PromptTemplate(template=full_prompt, input_variables=["revised_text", "revision_plan"])
+prompt = PromptTemplate(template=full_prompt, input_variables=["revised_text", "revision_plan", "user_feedback"])
 
 # Define the critique node
 def critique_node():
@@ -26,19 +26,24 @@ def critique_node():
     def generate(state: WorkflowState):
         formatted_prompt = prompt.format(
             revised_text=state.revised_text,
-            revision_plan="\n".join(state.revision_plan or [])
+            revision_plan="\n".join(state.revision_plan or []),
+            user_feedback=state.user_feedback or ""
         )
-        response = client.text_generation(
-            prompt=formatted_prompt,
-            max_new_tokens=500,
-            temperature=0.3,
-        )
-        # Defensive: handle empty/null/None response
+        # Call LLM with error handling to avoid crashing on network issues
+        try:
+            response = client.text_generation(
+                prompt=formatted_prompt,
+                max_new_tokens=500,
+                temperature=0.3,
+            )
+        except requests.exceptions.RequestException as e:
+            return {"critique_feedback": [f"Error: Could not connect to Hugging Face endpoint. {str(e)}"]}
+        # Defensive: handle empty/null response
         if not response or response.strip().lower() in ("null", "none"):
             return {"critique_feedback": ["No critique feedback was generated."]}
         try:
             return {"critique_feedback": parser.invoke(response).feedback}
-        except Exception:
-            return {"critique_feedback": ["Failed to parse critique feedback."]}
+        except Exception as e:
+            return {"critique_feedback": [f"Failed to parse critique feedback: {e}"]}
 
     return RunnableLambda(generate)

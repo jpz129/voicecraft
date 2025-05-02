@@ -11,7 +11,7 @@ prompt_path = Path(__file__).parent.parent / "prompts" / "revise.txt"
 prompt_text = prompt_path.read_text()
 prompt = PromptTemplate(
     template=prompt_text,
-    input_variables=["revision_plan", "current_text"]
+    input_variables=["revision_plan", "current_text", "user_feedback"]
 )
 
 def revise_node():
@@ -23,7 +23,8 @@ def revise_node():
         try:
             formatted_prompt = prompt.format(
                 current_text=state.current_text,
-                revision_plan="\n".join(state.revision_plan or [])
+                revision_plan="\n".join(state.revision_plan or []),
+                user_feedback=state.user_feedback or ""
             )
             revised = client.text_generation(
                 prompt=formatted_prompt,

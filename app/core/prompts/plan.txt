@@ -5,7 +5,12 @@ Your revision plan should be:
 - Focused on structure, clarity, tone, and narrative flow.
 - Reflective and helpful, not surface-level proofreading.
 
-Now, based on the user's draft, generate a clear and specific revision plan only.  
-Do not include the original draft or restate its content.  
-Do not generate a new essay or rewrite the text.  
+User Draft:
+{input}
+
+{user_feedback}
+
+Now, based on the user's draft (and any user feedback), generate a clear and specific revision plan only.
+Do not include the original draft or restate its content.
+Do not generate a new essay or rewrite the text.
 Only output a numbered list of revision steps—specific, actionable suggestions to improve the draft.

@@ -1,139 +1,91 @@
+# Streamlit chat app for Voicecraft: agentic, iterative text revision
 import streamlit as st
 import requests
 import json
 
+# API endpoints for streaming workflow
 API_URL = "http://127.0.0.1:8000/revise/stream"
 FEEDBACK_API_URL = "http://127.0.0.1:8000/revise/feedback/stream"
 
+# Set up Streamlit page
 st.set_page_config(page_title="Voicecraft Revision Workflow", layout="wide")
 st.title("📝 Voicecraft: Iterative Text Revision Workflow (API Mode)")
-st.markdown("Type or paste your draft below and click **Run Revision Workflow** to see step-by-step improvements, critiques, and decisions—streamed live from the FastAPI backend!")
+st.markdown("Type or paste your draft below and interact with the assistant to see step-by-step improvements, critiques, and decisions—streamed live from the FastAPI backend!")
 
-# Initialize session state for draft, feedback, and results
+# --- Session State Initialization ---
+# Remove static default draft; initialize current_draft to empty
 if "current_draft" not in st.session_state:
-    st.session_state.current_draft = "This product is amazing and it will definitely make your life better. It's affordable, easy to use, and very stylish so you should buy it."
-if "last_result" not in st.session_state:
-    st.session_state.last_result = None
-if "feedback" not in st.session_state:
-    st.session_state.feedback = ""
+    st.session_state.current_draft = ""
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-user_draft = st.text_area("Your Draft", height=200, value=st.session_state.current_draft, key="draft_input")
-run_button = st.button("Run Revision Workflow 🚦")
+# --- Chat UI ---
+st.write("---")
 
-if run_button and user_draft.strip():
-    st.session_state.current_draft = user_draft
-    st.markdown("---")
-    st.subheader("🔄 Streaming Workflow Output (from FastAPI):")
-    output_box = st.empty()
-    final_state = {}
-    output_lines = []
+# Display all previous chat messages (user and assistant)
+for msg in st.session_state.get("messages", []):
+    st.chat_message(msg["role"]).write(msg["content"])
+
+# --- Node labels and formatting for conversational output ---
+node_labels = {
+    "plan": "📝 Revision Plan",
+    "revise": "✍️ Revised Draft",
+    "critique": "🧐 Critique Feedback",
+    "decision": "🤔 Decision"
+}
+
+def format_node_output(node, node_output):
+    # Format each node's output as a conversational message
+    if node == "plan" and "revision_plan" in node_output:
+        return f"{node_labels[node]}:\n" + "\n".join([f"{i+1}. {step}" for i, step in enumerate(node_output['revision_plan'])])
+    elif node == "revise" and "revised_text" in node_output:
+        return f"{node_labels[node]}:\n{node_output['revised_text']}"
+    elif node == "critique" and "critique_feedback" in node_output:
+        return f"{node_labels[node]}:\n" + "\n".join([f"- {point}" for point in node_output['critique_feedback']])
+    elif node == "decision" and "revise_again" in node_output:
+        if node_output["revise_again"]:
+            return f"{node_labels[node]}: Let's revise again! (Looping back to plan, unless iteration cap is reached.)"
+        else:
+            return f"{node_labels[node]}: No further revision needed. Workflow complete!"
+    else:
+        return f"{node_labels.get(node, node)}: (No details to display.)"
+
+# --- Chat Input and Streaming Workflow ---
+# User enters a draft or feedback as a chat message
+if prompt := st.chat_input("Enter your draft or feedback..."):
+    # Add user message to chat history
+    st.session_state["messages"].append({"role": "user", "content": prompt})
+    st.chat_message("user").write(prompt)
+    # Determine if this is the initial draft or a feedback round
+    is_initial = len(st.session_state.get("messages", [])) == 1
+    # On first message, treat input as the draft
+    if is_initial:
+        st.session_state.current_draft = prompt
+    endpoint = API_URL if is_initial else FEEDBACK_API_URL
+    # Always send the latest revised draft (or initial user input) as "draft"
+    payload = {"draft": st.session_state.current_draft, "iteration_cap": 3}
+    if not is_initial:
+        payload["user_feedback"] = prompt
+    # Stream workflow results from the backend and display as assistant chat
+    assistant_msg = st.chat_message("assistant")
+    full_response = ""
     try:
-        with requests.post(API_URL, json={"draft": user_draft, "iteration_cap": 3}, stream=True, timeout=120) as resp:
+        with requests.post(endpoint, json=payload, stream=True, timeout=120) as resp:
             for line in resp.iter_lines():
                 if line:
-                    update = json.loads(line.decode("utf-8"))
-                    node_name = next(iter(update.keys()))
-                    output_lines.append(f"🟢 Step: {node_name}")
-                    for node_output in update.values():
-                        if isinstance(node_output, dict):
-                            final_state.update(node_output)
-                    output_lines.append(json.dumps(update, indent=2))
-                    output_lines.append("—" * 40)
-                    output_box.code("\n".join(output_lines))
-                    # Show the workflow state after each step
-                    st.markdown(f"**Workflow State after `{node_name}` step:**")
-                    st.code(json.dumps(final_state, indent=2), language="json")
+                    update = json.loads(line.decode())
+                    node = update.get("step", next(iter(update.keys())))
+                    node_output = update.get("node_output", {}).get(node, {})
+                    # Format and display as a conversational message
+                    message = format_node_output(node, node_output)
+                    assistant_msg.write(message)
+                    # Track the latest revised text for the next round
+                    if isinstance(node_output, dict) and "revised_text" in node_output:
+                        full_response = node_output["revised_text"]
     except Exception as e:
-        st.error(f"Error streaming from API: {e}")
-        st.stop()
-
-    result = final_state if final_state else None
-    st.session_state.last_result = result
-    st.session_state.current_draft = result.get("revised_text", user_draft) if result else user_draft
-    st.session_state.feedback = ""
-    st.markdown("---")
-    st.subheader("🏁 Final Result")
-    st.code(json.dumps(result, indent=2))
-    st.markdown("**Original Draft:**")
-    st.write(user_draft)
-    st.markdown("**Final Revision Plan:**")
-    if result and result.get("revision_plan"):
-        for step in result["revision_plan"]:
-            st.write(f"🔹 {step}")
-    st.markdown("**Final Revised Text:**")
-    st.write(result.get("revised_text", "No revised text available") if result else "No revised text available")
-    st.markdown("**Final Critique Feedback:**")
-    if result and result.get("critique_feedback"):
-        for point in result["critique_feedback"]:
-            st.write(f"💡 {point}")
-    st.markdown("**Final Decision (Should Revise Again?):**")
-    if result:
-        if result.get('revise_again') is True:
-            st.success("🔁 The workflow decided: Revise again! (Looping back to plan node, unless iteration cap is reached)")
-        elif result.get('revise_again') is False:
-            st.info("✅ The workflow decided: No further revision needed. Workflow complete!")
-        else:
-            st.warning("⚠️ Unable to determine decision from workflow output.")
-
-st.markdown("---")
-st.subheader("💬 Provide Feedback for Further Revision")
-feedback = st.text_area("What else would you like to change? (Optional)", value=st.session_state.feedback, key="feedback_input")
-feedback_button = st.button("Submit Feedback and Rerun Workflow 🔄")
-
-# Always use the latest revised text as the draft for feedback rounds
-current_draft = st.session_state.current_draft
-
-if feedback_button and feedback.strip():
-    st.session_state.feedback = feedback
-    st.markdown("---")
-    st.subheader("🔄 Streaming Feedback Workflow Output (from FastAPI):")
-    feedback_output_box = st.empty()
-    feedback_final_state = {}
-    feedback_output_lines = []
-    try:
-        with requests.post(FEEDBACK_API_URL, json={"draft": current_draft, "iteration_cap": 3, "user_feedback": feedback}, stream=True, timeout=120) as resp:
-            for line in resp.iter_lines():
-                if line:
-                    update = json.loads(line.decode("utf-8"))
-                    node_name = next(iter(update.keys()))
-                    feedback_output_lines.append(f"🟢 Step: {node_name}")
-                    for node_output in update.values():
-                        if isinstance(node_output, dict):
-                            feedback_final_state.update(node_output)
-                    feedback_output_lines.append(json.dumps(update, indent=2))
-                    feedback_output_lines.append("—" * 40)
-                    feedback_output_box.code("\n".join(feedback_output_lines))
-                    # Show the workflow state after each step
-                    st.markdown(f"**Workflow State after `{node_name}` step:**")
-                    st.code(json.dumps(feedback_final_state, indent=2), language="json")
-    except Exception as e:
-        st.error(f"Error streaming from API: {e}")
-        st.stop()
-
-    feedback_result = feedback_final_state if feedback_final_state else None
-    st.session_state.last_result = feedback_result
-    st.session_state.current_draft = feedback_result.get("revised_text", current_draft) if feedback_result else current_draft
-    st.session_state.feedback = ""
-    st.markdown("---")
-    st.subheader("🏁 Final Result After Feedback")
-    st.code(json.dumps(feedback_result, indent=2))
-    st.markdown("**Original Draft:**")
-    st.write(current_draft)
-    st.markdown("**Final Revision Plan:**")
-    if feedback_result and feedback_result.get("revision_plan"):
-        for step in feedback_result["revision_plan"]:
-            st.write(f"🔹 {step}")
-    st.markdown("**Final Revised Text:**")
-    st.write(feedback_result.get("revised_text", "No revised text available") if feedback_result else "No revised text available")
-    st.markdown("**Final Critique Feedback:**")
-    if feedback_result and feedback_result.get("critique_feedback"):
-        for point in feedback_result["critique_feedback"]:
-            st.write(f"💡 {point}")
-    st.markdown("**Final Decision (Should Revise Again?):**")
-    if feedback_result:
-        if feedback_result.get('revise_again') is True:
-            st.success("🔁 The workflow decided: Revise again! (Looping back to plan node, unless iteration cap is reached)")
-        elif feedback_result.get('revise_again') is False:
-            st.info("✅ The workflow decided: No further revision needed. Workflow complete!")
-        else:
-            st.warning("⚠️ Unable to determine decision from workflow output.")
+        assistant_msg.write(f"Error: {e}")
+    # Add the final revised text as an assistant message for the next round
+    if full_response:
+        st.session_state.current_draft = full_response
+        st.session_state["messages"].append({"role": "assistant", "content": full_response})
+        st.chat_message("assistant").write(full_response)

@@ -22,8 +22,9 @@ class WorkflowState(BaseModel):
     revised_text: Optional[str] = None
     critique_feedback: Optional[List[str]] = None
     revise_again: Optional[bool] = None
-    iteration: int = 0  # Add iteration counter
-    user_feedback: Optional[str] = None  # New: user can provide feedback for further changes
+    iteration: int = 0
+    user_feedback: Optional[str] = None
+    history: Optional[List[dict]] = []  # Memory of past state snapshots
 
 class ReviseRequest(BaseModel):
     draft: str

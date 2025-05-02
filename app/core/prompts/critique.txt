@@ -6,4 +6,6 @@ Revised Text:
 Revision Plan:
 {revision_plan}
 
+{user_feedback}
+
 Your response should be a list of critique points, each as a short sentence.

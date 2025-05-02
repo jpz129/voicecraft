@@ -5,8 +5,11 @@ from huggingface_hub import InferenceClient
 from pathlib import Path
 import os
 import json
+import logging
 
 from app.models.schemas import RevisionPlan, WorkflowState
+
+logger = logging.getLogger("voicecraft.backend.plan")
 
 # Load and prepare prompt
 plan_template = Path(__file__).parent.parent / "prompts" / "plan.txt"
@@ -23,10 +26,12 @@ def plan_node():
     client = InferenceClient(model=endpoint_url, token=api_token)
 
     def generate(state: WorkflowState):
+        # Format and log the prompt for debugging
         formatted_prompt = prompt.format(
             input=state.current_text,
             user_feedback=state.user_feedback or ""
         )
+        logger.info(f"[Plan Prompt]\n{formatted_prompt}")
         response = client.text_generation(
             prompt=formatted_prompt,
             max_new_tokens=500,
