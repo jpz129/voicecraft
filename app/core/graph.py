@@ -39,5 +39,5 @@ def build_decision_loop_graph(iteration_cap: int = 3):
     # intent routing: use state.intent
     def route_intent(state):
         return getattr(state, "intent", "plan")
-    graph.add_conditional_edges("detect_intent", route_intent, {"plan": "plan", "qa": "qa", "stop": "__end__", "other": "plan"})
+    graph.add_conditional_edges("detect_intent", route_intent, {"plan": "plan", "qa": "qa", "question": "qa", "stop": "__end__", "other": "plan"})
     return graph.compile()

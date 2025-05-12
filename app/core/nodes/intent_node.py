@@ -32,11 +32,17 @@ def intent_node():
             return {"intent": "stop"}
         # LLM-based intent detection
         formatted_prompt = prompt.format(user_message=text)
-        response = client.text_generation(
-            prompt=formatted_prompt,
-            max_new_tokens=30,
-            temperature=0.01
-        )
+        try:
+            response = client.text_generation(
+                prompt=formatted_prompt,
+                max_new_tokens=30,
+                temperature=0.01
+            )
+        except Exception as e:
+            # Log the error and return fallback intent
+            import logging
+            logging.error(f"Intent node failed to call Hugging Face endpoint: {e}")
+            return {"intent": "other", "error": f"Intent detection failed: {e}"}
         # Extract JSON from the response
         match = re.search(r'\{.*?\}', response, re.DOTALL)
         intent = "other"

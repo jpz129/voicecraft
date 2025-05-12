@@ -3,3 +3,6 @@
 .env.*
 !.env.example
 llm-examples/*
+chainlit/*
+langgraph/*
+langchain/*

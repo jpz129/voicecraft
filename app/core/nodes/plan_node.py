@@ -37,6 +37,15 @@ def plan_node():
             max_new_tokens=500,
             temperature=0.3,
         )
-        return {"revision_plan": parser.invoke(response).revision_plan}
+        # Defensive: handle empty/null/invalid response
+        if not response or response.strip().lower() in ("null", "none", ""):
+            logger.error("[Plan Node] LLM returned empty or null response.")
+            return {"revision_plan": ["No revision plan could be generated. Please try again or check the LLM endpoint."]}
+        try:
+            parsed = parser.invoke(response)
+            return {"revision_plan": parsed.revision_plan}
+        except Exception as e:
+            logger.error(f"[Plan Node] Failed to parse revision plan: {e}\nRaw response: {response}")
+            return {"revision_plan": [f"Failed to parse revision plan: {e}"]}
 
     return RunnableLambda(generate)

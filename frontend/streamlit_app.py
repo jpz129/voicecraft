@@ -7,6 +7,7 @@ import uuid
 # API endpoints for streaming workflow
 API_URL = "http://127.0.0.1:8000/revise/stream"
 FEEDBACK_API_URL = "http://127.0.0.1:8000/revise/feedback/stream"
+CANCEL_URL = "http://127.0.0.1:8000/revise/cancel"
 
 # Set up Streamlit page
 st.set_page_config(page_title="Voicecraft Revision Workflow", layout="wide")
@@ -30,6 +31,8 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "processing" not in st.session_state:
     st.session_state.processing = False
+if "request_id" not in st.session_state:
+    st.session_state.request_id = None
 
 # --- Chat UI ---
 st.write("---")
@@ -93,6 +96,7 @@ if st.session_state.get("processing") and "pending_prompt" in st.session_state:
     if is_initial:
         st.session_state.current_draft = user_input
     request_id = str(uuid.uuid4())
+    st.session_state.request_id = request_id  # save request ID in session
     endpoint = API_URL if is_initial else FEEDBACK_API_URL
     payload = {"draft": st.session_state.current_draft, "iteration_cap": 3, "request_id": request_id}
     if not is_initial:
@@ -121,3 +125,14 @@ if st.session_state.get("processing") and "pending_prompt" in st.session_state:
     # cleanup
     st.session_state.processing = False
     del st.session_state.pending_prompt
+
+# --- Stop button to cancel the request ---
+if st.session_state.get("processing"):
+    if st.button("⏹️ Stop"):
+        try:
+            # send cancel request to the server
+            requests.post(CANCEL_URL, json={"request_id": st.session_state.request_id})
+            st.session_state.processing = False
+            st.success("✅ Request canceled.")
+        except Exception as e:
+            st.error(f"⚠️ Error canceling request: {e}")

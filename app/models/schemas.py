@@ -31,6 +31,7 @@ class WorkflowState(BaseModel):
 class ReviseRequest(BaseModel):
     draft: str
     iteration_cap: int = 3
+    request_id: str  # unique identifier for this request, used for cancellation
 
 class ReviseResponse(BaseModel):
     result: dict
