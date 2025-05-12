@@ -4,6 +4,7 @@ from langchain_core.output_parsers import PydanticOutputParser
 from huggingface_hub import InferenceClient
 from pathlib import Path
 import os
+import requests
 
 from app.models.schemas import CritiqueFeedback, WorkflowState
 

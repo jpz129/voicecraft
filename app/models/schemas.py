@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, TypedDict, Optional
+from typing import List, TypedDict, Optional, Literal
 
 class RevisionPlan(BaseModel):
     revision_plan: List[str]
@@ -25,6 +25,8 @@ class WorkflowState(BaseModel):
     iteration: int = 0
     user_feedback: Optional[str] = None
     history: Optional[List[dict]] = []  # Memory of past state snapshots
+    intent: Optional[str] = None
+    answer: Optional[str] = None
 
 class ReviseRequest(BaseModel):
     draft: str
@@ -32,3 +34,6 @@ class ReviseRequest(BaseModel):
 
 class ReviseResponse(BaseModel):
     result: dict
+
+class IntentOutput(BaseModel):
+    intent: Literal["feedback", "question", "other"]

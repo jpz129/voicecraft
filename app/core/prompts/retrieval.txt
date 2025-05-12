@@ -1,0 +1,9 @@
+You are an expert writing assistant. Given the draft text and a user question, provide a concise, accurate answer.
+
+Draft:
+{current_text}
+
+Question:
+{user_feedback}
+
+Answer:

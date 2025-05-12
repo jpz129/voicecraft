@@ -15,6 +15,8 @@ def stream_revision_workflow(request: ReviseRequest):
         input_state["user_feedback"] = request.user_feedback
 
     def event_stream():
+        # Initial typing indicator
+        yield json.dumps({"step": "status", "node_output": {"status": "typing"}}) + "\n"
         state_accum = {}
         # initialize history list
         state_accum['history'] = []
